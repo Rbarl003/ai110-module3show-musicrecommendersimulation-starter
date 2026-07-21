@@ -84,9 +84,9 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     """
     Scores a single song against user preferences using the Algorithm Recipe:
 
-      - Genre match      -> +2.0
+      - Genre match      -> +1.0
       - Mood match       -> +1.0
-      - Energy similarity-> +1.0 max, graded by closeness
+      - Energy similarity-> +2.0 max, graded by closeness
       - Acoustic bonus   -> +0.5 (only if the user likes acoustic AND the
                             song is acoustic enough)
 
@@ -98,19 +98,21 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     score = 0.0
     reasons: List[str] = []
 
-    # Genre match (+2.0): the reliable anchor, worth double a mood match.
+    # Genre match (+1.0): a category signal, weighted equal to mood so it
+    # anchors without dominating (energy is the strongest single signal).
     if song["genre"] == user_prefs["favorite_genre"]:
-        score += 2.0
-        reasons.append(f"genre match ({song['genre']}) +2.0")
+        score += 1.0
+        reasons.append(f"genre match ({song['genre']}) +1.0")
 
     # Mood match (+1.0): refines the feel within a genre.
     if song["mood"] == user_prefs["favorite_mood"]:
         score += 1.0
         reasons.append(f"mood match ({song['mood']}) +1.0")
 
-    # Energy similarity (up to +1.0): graded so a near-miss still earns credit.
+    # Energy similarity (up to +2.0): the dominant numeric signal, graded so a
+    # near-miss still earns credit.
     energy_diff = abs(user_prefs["target_energy"] - song["energy"])
-    energy_points = 1.0 * (1 - energy_diff)
+    energy_points = 2.0 * (1 - energy_diff)
     score += energy_points
     reasons.append(f"energy close (Δ{energy_diff:.2f}) +{energy_points:.2f}")
 
